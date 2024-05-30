@@ -11,8 +11,6 @@
 #ifndef CLIENTDATA_H
 #define CLIENTDATA_H
 
-#include "socketSession.h"
-
 #define MAX_ROUND 12
 #define BOARD_WIDTH 4
 #define RESULT_WIDTH 2
@@ -26,12 +24,8 @@
 #define CYAN 'C'
 #define MAGENTA 'M'
 
-#define LOG_LEVEL 1
-/**
- *	\def LOG(level, fmt, ...)
- *	\brief Macro fonction qui affiche un message de log en fonction du niveau de log.
- */
-#define LOG(level, fmt, ...) if (level <= LOG_LEVEL) fprintf(stdout, fmt, ##__VA_ARGS__)
+#define SERVER_LISTENNING_KEY 58392
+
 
 /**
  *	\struct		otherPlayer
@@ -58,7 +52,7 @@ struct game
     otherPlayer_t otherPlayers[MAX_PLAYERS -1]; /**<The states of the other players in the game.*/
     int nbPlayers; /**<The total number of players in the game.*/
     int playerIndex; /**<The index of the current player.*/
-    socket_t socket; /**<The socket used for communication with the server.*/
+    int msgid; /**<The message queue id.*/
 };
 typedef struct game game_t;
 

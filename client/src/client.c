@@ -64,7 +64,7 @@ void endGame(game_t game) {
         printf("Waiting for other players to finish the game...\n");
     }
     printf("Waiting for other players to finish their round...\n");
-    receiveData(&(game.socket), buffer, 6);
+    receiveData(game.msgid, buffer, 6);
     if (strcmp(buffer, "win") == 0) {
         printf("Congratulations! You won the game!\n");
     } else {
@@ -75,7 +75,7 @@ void endGame(game_t game) {
             printf("Sorry, you lost the game. The winner is player %d.\n", winner+1);
         }
     }
-    receiveData(&(game.socket), buffer, 7);
+    receiveData(game.msgid, buffer, 7);
     printf("The secret combination was %s.\n", buffer);
 }
 

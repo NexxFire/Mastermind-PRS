@@ -16,40 +16,22 @@
  *  \details    The player is prompted to enter the server's IP and port. If no input is given, default values are used. The player is then prompted to enter 'ready' to indicate that they are ready to play. The number of players and the player's index are then received from the server.
  */
 void connexionWithServer(game_t *game) {
-
-    char serverIp[17];
-    char serverPortBuffer[7];
-    int serverPort;
     char buffer[16];
+    printf("Connecting to the server...\n");
+    game->msgid = connectToServer(SERVER_LISTENNING_KEY);
 
-    printf("Entrez l'adresse IP du serveur : ");
-    getUserInput(serverIp, sizeof(serverIp));
-    if (strcmp(serverIp, "\n") == 0) {
-        strcpy(serverIp, SERVER_IP);
-    }
-
-    printf("Entrez le port du serveur : ");
-    getUserInput(serverPortBuffer, sizeof(serverPortBuffer));
-    if (strcmp(serverPortBuffer, "\n") == 0) {
-        serverPort = SERVER_PORT;
-    } else {
-        serverPort = atoi(serverPortBuffer);
-    }
-    
-    game->socket = connecterClt2Srv(serverIp, serverPort);
-
-    printf("Connected to the server\n");
+    printf("Connected !\n");
     printf("type 'ready' when you are ready to play\n");
     do {
         getUserInput(buffer, sizeof(buffer));
     } while (strcmp(buffer, "ready") != 0);
     printf("You are ready to play\n");
-    sendData(&(game->socket), "ready", 1);
+    sendData(game->msgid, "ready", 1);
     printf("Waiting for other players to be ready...\n");
-    receiveData(&(game->socket), buffer, 2);
+    receiveData(game->msgid, buffer, 2);
     game->nbPlayers = buffer[0];
     printf("\nThere are %d players in the game\n", game->nbPlayers);
-    receiveData(&(game->socket), buffer, 8);
+    receiveData(game->msgid, buffer, 8);
     game->playerIndex = buffer[0];
     printf("You are player %d\n", game->playerIndex +1);
     printf("Game is starting...\n");
@@ -90,7 +72,7 @@ void sendCombination(game_t *game) {
     for (int i = 0; i < BOARD_WIDTH; i++) {
         game->board[game->nbRound][i] = playerCombination[i];
     }
-    sendData(&(game->socket), playerCombination, 3);
+    sendData(game->msgid, playerCombination, 3);
 }
 
 /**
@@ -101,7 +83,7 @@ void sendCombination(game_t *game) {
  */
 void getResult(game_t *game) {
     char buffer[RESULT_WIDTH + 1] = {0};
-    receiveData(&(game->socket), buffer, 4);
+    receiveData(game->msgid, buffer, 4);
     for (int i = 0; i < RESULT_WIDTH; i++) {
         game->result[game->nbRound][i] = buffer[i] - '0';
     }
@@ -116,7 +98,7 @@ void getResult(game_t *game) {
 void fetchOtherClientsData(game_t *game) {
     char buffer[RESULT_WIDTH + 2];
     for (int i = 0; i < game->nbPlayers - 1; i++) {
-        receiveData(&(game->socket), buffer, 5);
+        receiveData(game->msgid, buffer, 5);
         game->otherPlayers[i].nbGoodPlace = buffer[0] - '0';
         game->otherPlayers[i].nbGoodColor = buffer[1] - '0';
         game->otherPlayers[i].nbRound = buffer[2] - '0';

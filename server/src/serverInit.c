@@ -41,4 +41,5 @@ void _playerInit(player_t *player) {
             player->result[i][j] = 0;
         }
     }
+    player->msgid = -1;
 }

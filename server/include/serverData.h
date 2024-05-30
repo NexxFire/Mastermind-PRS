@@ -1,9 +1,7 @@
 #ifndef SERVERDATA_H
 #define SERVERDATA_H
 
-
-#include "socketSession.h"
-#include "clientData.h"
+#include <stdio.h>
 
 #define MAX_ROUND 12
 #define BOARD_WIDTH 4
@@ -18,9 +16,7 @@
 #define CYAN 'C'
 #define MAGENTA 'M'
 
-//listen on all network interfaces
-#define SERVER_IP "0.0.0.0"
-#define SERVER_PORT 58392
+#define SERVER_LISTENNING_KEY 58392
 
 #define LOG_LEVEL 1
 /**
@@ -38,8 +34,8 @@ struct player
     char board[MAX_ROUND][BOARD_WIDTH]; /**<The player's board.*/
     char result[MAX_ROUND][RESULT_WIDTH]; /**<The player's result.*/
     int nbRound; /**<The number of rounds played by the player.*/
-    socket_t socket; /**<The player's socket to communicate with the client.*/
     int ready; /**<The player's ready status.*/
+    int msgid; /**<The player's message queue id.*/
 };
 typedef struct player player_t;
 

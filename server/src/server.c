@@ -126,8 +126,8 @@ void endGame(gameData_t *gameData) {
         } else {
             sprintf(buffer, "loose:%d", gameData->gameWinner);
         }
-        sendData(&gameData->playerList.players[i].socket, buffer, 6);
-        sendData(&gameData->playerList.players[i].socket, gameData->secretCode, 7);
+        sendData(gameData->playerList.players[i].msgid, buffer, 6);
+        sendData(gameData->playerList.players[i].msgid, gameData->secretCode, 7);
     }
     LOG(1, "Winner is player %d.\n", gameData->gameWinner);
     LOG(1, "Result sent. Game ended.\n");

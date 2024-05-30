@@ -8,15 +8,16 @@
 #ifndef COMMUNICATION_H
 #define COMMUNICATION_H
 
-#include "socketSession.h"
-#include "socketData.h"
 #include "utils.h"
 #include "clientData.h"
 #include <ctype.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
+#include <string.h>
 
 
-#define SERVER_IP "127.0.0.1"
-#define SERVER_PORT 58392
+#define SERVER_LISTENNING_KEY 58392
 
 /**
  *	\fn			void connectionWithServer(game_t *game)
