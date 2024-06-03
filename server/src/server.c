@@ -6,7 +6,10 @@
  */
 #include "server.h"
 
+int serverPID = 0;
+int clientPIDs[MAX_PLAYERS+1] = {0};
 
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
  /**
  * \fn          int main()
  * \brief       Main function of the server.
@@ -14,6 +17,8 @@
  */
 int main() {
     gameData_t gameData;
+    pthread_mutex_init(&mutex, NULL);
+    signalHandlerRegister();
     while (1) {
         serverInit(&gameData);
         clientRegistration(&gameData);
@@ -96,12 +101,12 @@ void checkChoice(gameData_t *gameData, int playerIndex) {
         if (gameData->playerList.players[playerIndex].board[gameData->playerList.players[playerIndex].nbRound][i] == gameData->secretCode[i]) {
             gameData->playerList.players[playerIndex].result[gameData->playerList.players[playerIndex].nbRound][0]++;
             LOG(1, "Player %d color %c is at the right place.\n", playerIndex, gameData->playerList.players[playerIndex].board[gameData->playerList.players[playerIndex].nbRound][i]);
-            LOG(1, "Player %d right place : %d.\n", playerIndex, gameData->playerList.players[playerIndex].result[gameData->playerList.players[playerIndex].nbRound][0]);
+            LOG(1, "Player %d nb right place : %d.\n", playerIndex, gameData->playerList.players[playerIndex].result[gameData->playerList.players[playerIndex].nbRound][0]);
         }
     }
     for (int i = 0; i < 6; i++) {
         gameData->playerList.players[playerIndex].result[gameData->playerList.players[playerIndex].nbRound][1] += MIN(nbcolorsCombination[i], nbcolorsPlayer[i]);
-        LOG(1, "Player %d right color : %d.\n", playerIndex, gameData->playerList.players[playerIndex].result[gameData->playerList.players[playerIndex].nbRound][1]);
+        LOG(1, "Player %d nb right color : %d.\n", playerIndex, gameData->playerList.players[playerIndex].result[gameData->playerList.players[playerIndex].nbRound][1]);
     }
     gameData->playerList.players[playerIndex].result[gameData->playerList.players[playerIndex].nbRound][1] -= gameData->playerList.players[playerIndex].result[gameData->playerList.players[playerIndex].nbRound][0];
     if (gameData->playerList.players[playerIndex].result[gameData->playerList.players[playerIndex].nbRound][0] == BOARD_WIDTH && gameData->gameWinner == EMPTY) {
@@ -153,5 +158,31 @@ void *clientThreadHandler(void *args) {
 }
 
 
+void signalHandlerRegister () {
+    int signals[] = {
+        SIGINT, SIGTERM, SIGQUIT, SIGILL, SIGABRT, SIGFPE, SIGSEGV,
+        SIGBUS, SIGSYS, SIGHUP, SIGPIPE, SIGALRM, SIGXCPU, SIGXFSZ, 
+        SIGUSR1
+    };
+    int num_signals = sizeof(signals) / sizeof(signals[0]);
 
-    
+    for (int i = 0; i < num_signals; ++i) {
+        CHECK((signal(signals[i], signalHandlerStop) != SIG_ERR) -1, "Error: failed to register signal handler.");
+    }
+    atexit(cleanup);
+}
+
+
+void signalHandlerStop(int signum) {
+    printf("Caught signal %d\n", signum);
+    printf("Game stopped.\n");
+    exit(signum);
+}
+
+void cleanup() {
+    printf("Cleaning up...\n");
+    msgctl(msgget(SERVER_LISTENNING_KEY, 0666), IPC_RMID, NULL);
+    for (int i = 0; clientPIDs[i] != 0 && clientPIDs[i] != getpid(); i++) {
+        kill(clientPIDs[i], SIGUSR1), "Error: failed to send signal to client.";
+    }
+}

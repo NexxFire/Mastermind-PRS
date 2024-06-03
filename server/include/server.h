@@ -11,6 +11,7 @@
 #include "serverCommunication.h"
 #include "serverInit.h"
 #include <stdlib.h>
+#include <signal.h>
 
 /**
  * \def         MAX(a,b)
@@ -71,6 +72,30 @@ void endGame(gameData_t *gameData);
  */
 void *clientThreadHandler(void *args);
 
+/**
+ *	\fn			void signalHandlerRegister (game_t game)
+ *	\brief		Registers the signal handlers.
+ *	\param 		game : The game state.
+ *	\details		Registers the signal handlers for SIGINT and SIGUSR1.
+ */
+void signalHandlerRegister ();
+
+/**
+ *	\fn			void signalHandlerStop(int signum)
+ *	\brief		Handles the SIGINT signal.
+ *	\param 		signum : The signal number.
+ *	\details		Handles the SIGINT signal by sending a message to the server to stop the game and then exiting the client.
+ */
+void signalHandlerStop(int signum);
+
+/**
+ *	\fn			void signalHandlerUSR(int signum)
+ *	\brief		Handle server cleanup on exit.
+ *	\param 		signum : The signal number.
+ *	\details	Remove the listenning message queue if it exist and send a SIGUSR1 signal to the clients to stop the game.
+ */
+
+void cleanup();
 
 
 

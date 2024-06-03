@@ -1,6 +1,9 @@
 #include "utils.h"
 
 
+extern int serverPID;
+extern int clientPIDs[MAX_PLAYERS];
+
 /**
  * \brief Get user input from stdin
  * \param buffer The buffer where the input will be stored
@@ -37,10 +40,10 @@ void sendData(int msgid, char *data, int expectedCode) {
     strcpy(buffer.mtext, data);
     buffer.mtype = 1;
     int receivedCode;
-    CHECK(msgsnd(msgid, &buffer, sizeof(buffer), 0), "Error: could not send validation code to server.");
-    CHECK(msgrcv(msgid, &buffer, sizeof(buffer), 2, 0), "Error: could not receive data from server.");
+    CHECK(msgsnd(msgid, &buffer, sizeof(buffer), 0), "Error: could not send validation code to server");
+    CHECK(msgrcv(msgid, &buffer, sizeof(buffer), 2, 0), "Error: could not receive data from server");
     sscanf(buffer.mtext, "ok:%d", &receivedCode);
-    CHECK((receivedCode == expectedCode) -1, "Error: code received from server is not the expected one. Bad client-server synchronization.");
+    CHECK((receivedCode == expectedCode) -1, "Error: code received from server is not the expected one. Bad client-server synchronization");
 }
 
 /**
@@ -52,25 +55,41 @@ void sendData(int msgid, char *data, int expectedCode) {
 */
 void receiveData(int msgid, char *data, int validationCode) {
     mbuf_t buffer;
-    CHECK(msgrcv(msgid, &buffer, sizeof(buffer), 1, 0), "Error: could not receive data from server.");
+    CHECK(msgrcv(msgid, &buffer, sizeof(buffer), 1, 0), "Error: could not receive data from server");
     strcpy(data, buffer.mtext);
     sprintf(buffer.mtext, "ok:%d", validationCode);
     buffer.mtype = 2;
-    CHECK(msgsnd(msgid, &buffer, sizeof(buffer), 0), "Error: could not send validation code to server.");
+    CHECK(msgsnd(msgid, &buffer, sizeof(buffer), 0), "Error: could not send validation code to server");
 }
 
 int acceptClient(int msgid) {
     char buffer[10];
-    int clientId;
+    int clientPID;
+    int clientMsgid;
+    int i;
+
     receiveData(msgid, buffer, 0);
-    sscanf(buffer, "%d", &clientId);
-    return msgget(ftok("client", clientId), 0666 | IPC_CREAT);
+    sscanf(buffer, "%d", &clientPID);
+    for (i = 0; clientPIDs[i] != 0; i++);
+    clientPIDs[i] = clientPID;
+    CHECK(clientMsgid = msgget(ftok("client", clientPID), 0666 | IPC_CREAT), "Error: could not connect to client");
+    sprintf(buffer, "%d", getpid());
+    sendData(clientMsgid, buffer, 0);
+    return clientMsgid;
 }
 
 int connectToServer(key_t serverKey) {
     char buffer[10];
-    int serverMsgid = msgget(serverKey, 0666 | IPC_CREAT);
+    int serverMsgid;
+    int clientMsgid;
+    CHECK(serverMsgid = msgget(serverKey, 0666), "Error: no server found");
     sprintf(buffer, "%d", getpid());
     sendData(serverMsgid, buffer, 0);
-    return msgget(ftok("client", getpid()), 0666 | IPC_CREAT);
+    CHECK(clientMsgid = msgget(ftok("client", getpid()), 0666 | IPC_CREAT), "Error: could not connect to server");
+    receiveData(clientMsgid, buffer, 0);
+    sscanf(buffer, "%d", &serverPID);
+    if (serverPID == getpid()) {
+        msgctl(clientMsgid, IPC_RMID, NULL);
+    }
+    return clientMsgid;
 }

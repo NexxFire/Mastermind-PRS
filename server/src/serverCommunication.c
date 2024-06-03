@@ -5,6 +5,8 @@
  */
 #include "serverCommunication.h"
 
+extern pthread_mutex_t mutex;
+
 
 /**
  * \fn          void clientRegistration(gameData_t *gameData)
@@ -36,9 +38,12 @@ void clientRegistration(gameData_t *gameData) {
         LOG(1, "Thread for player %d joined.\n", i);
         LOG(1, "nbPlayers: %d\n", gameData->playerList.nbPlayers);
     }
+    pthread_mutex_lock(&mutex);
     gameStarted = 1;
     // Send a connection to exit the thread
     connectToServer(SERVER_LISTENNING_KEY);
+    pthread_mutex_unlock(&mutex);
+
     pthread_join(threadListenning, NULL);
     LOG(1, "All players are ready.\n");
     buffer[0] = gameData->playerList.nbPlayers;
@@ -59,7 +64,6 @@ void clientRegistration(gameData_t *gameData) {
  * \details     This function waits for a specific player to send their choice and then updates the player's board with their choice.
  */
 void getPlayerChoice(gameData_t *gameData, int playerIndex) {
-    gameData->playerList.players[playerIndex].board[MAX_ROUND-1][0] = 16;
     LOG(1, "Waiting for player %d to send his choice...\n", playerIndex);
     receiveData(gameData->playerList.players[playerIndex].msgid, gameData->playerList.players[playerIndex].board[gameData->playerList.players[playerIndex].nbRound], 3);
     LOG(1, "Player %d sent his choice :%s\n", playerIndex, gameData->playerList.players[playerIndex].board[gameData->playerList.players[playerIndex].nbRound]);
@@ -122,22 +126,25 @@ void *_listenningThreadHandler(void *args) {
     while (listenningThreadHandlerArgs->gameData->playerList.nbPlayers < MAX_PLAYERS && !*listenningThreadHandlerArgs->gameStarted) {
         LOG(1, "nbPlayers: %d\n", listenningThreadHandlerArgs->gameData->playerList.nbPlayers);
         LOG(1, "gameStarted: %d\n", *listenningThreadHandlerArgs->gameStarted);
+        //pthread_mutex_lock(&mutex);
         listenningThreadHandlerArgs->gameData->playerList.players[listenningThreadHandlerArgs->gameData->playerList.nbPlayers].msgid = acceptClient(serverListenningQueue);
         if (*listenningThreadHandlerArgs->gameStarted) {
             LOG(1, "Stop listening\n");
             break;
         }
-        clientReadyThreadHandlerArgs_t clientReadyThreadHandlerArgs;
-        clientReadyThreadHandlerArgs.gameData = listenningThreadHandlerArgs->gameData;
-        clientReadyThreadHandlerArgs.playerIndex = listenningThreadHandlerArgs->gameData->playerList.nbPlayers;
+        //pthread_mutex_unlock(&mutex);
+        clientReadyThreadHandlerArgs_t *clientReadyThreadHandlerArgs = malloc(sizeof(clientReadyThreadHandlerArgs_t));
+        clientReadyThreadHandlerArgs->gameData = listenningThreadHandlerArgs->gameData;
+        clientReadyThreadHandlerArgs->playerIndex = listenningThreadHandlerArgs->gameData->playerList.nbPlayers;
         pthread_create(&listenningThreadHandlerArgs->threadClients[listenningThreadHandlerArgs->gameData->playerList.nbPlayers], 
                         NULL, 
                         _clientReadyThreadHandler, 
-                        &clientReadyThreadHandlerArgs);
+                        clientReadyThreadHandlerArgs);
         LOG(1, "Player %d connected.\n", listenningThreadHandlerArgs->gameData->playerList.nbPlayers);
         listenningThreadHandlerArgs->gameData->playerList.nbPlayers++;
     }
     LOG(1, "All players are connected.\n");
+    msgctl(serverListenningQueue, IPC_RMID, NULL);
     pthread_exit(NULL);
 }
 
@@ -154,10 +161,12 @@ void *_clientReadyThreadHandler(void *args) {
     while (!clientReadyThreadHandlerArgs->gameData->playerList.players[clientReadyThreadHandlerArgs->playerIndex].ready) {
         receiveData(clientReadyThreadHandlerArgs->gameData->playerList.players[clientReadyThreadHandlerArgs->playerIndex].msgid, buffer, 1);
         if (strcmp(buffer, "ready") == 0) {
+            //printf("Player %d is ready.\n", clientReadyThreadHandlerArgs->playerIndex);
             clientReadyThreadHandlerArgs->gameData->playerList.players[clientReadyThreadHandlerArgs->playerIndex].ready = 1;
         }
     }
     LOG(1, "Player %d is ready.\n", clientReadyThreadHandlerArgs->playerIndex);
+    free(clientReadyThreadHandlerArgs);
     pthread_exit(NULL);
 }
 

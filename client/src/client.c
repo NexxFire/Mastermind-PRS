@@ -6,6 +6,10 @@
  */
 #include "client.h"
 
+
+int serverPID = 0;
+int clientPIDs[MAX_PLAYERS+1] = {0};
+
 /**
  *	\fn			int main()
  *	\brief		The main game loop.
@@ -13,6 +17,7 @@
  */
 int main() {
     game_t game;
+    signalHandlerRegister();
     showMenu();
     initGame(&game);
     connexionWithServer(&game);
@@ -80,4 +85,32 @@ void endGame(game_t game) {
 }
 
 
+// register signal handler for exit signals
+void signalHandlerRegister() {
+    int signals[] = {
+        SIGINT, SIGTERM, SIGQUIT, SIGILL, SIGABRT, SIGFPE, SIGSEGV,
+        SIGBUS, SIGSYS, SIGHUP, SIGPIPE, SIGALRM, SIGXCPU, SIGXFSZ,
+        SIGUSR1
+    };
+    int num_signals = sizeof(signals) / sizeof(signals[0]);
+
+    for (int i = 0; i < num_signals; ++i) {
+        //check if signal handler is registered
+        CHECK((signal(signals[i], signalHandlerStop) != SIG_ERR) -1, "Error: failed to register signal handler.");
+    }
+    atexit(cleanup);
+}
+
+
+void signalHandlerStop(int signum) {
+    printf("Caught signal %d\n", signum);
+    printf("Game stopped.\n");
+    kill(serverPID, SIGUSR1);
+    exit(signum);
+}
+
+void cleanup() {
+    printf("Cleaning up...\n");
+    msgctl(msgget(ftok("client", getpid()), 0666), IPC_RMID, NULL);
+}
 

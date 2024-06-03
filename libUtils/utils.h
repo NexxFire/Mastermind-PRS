@@ -5,10 +5,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "serverData.h"
+#include "clientData.h"
 
 
 #define CHECK(sts, msg) if ((sts)==-1) {perror(msg); exit(-1);}
 #define PAUSE(msg)	printf("%s [Appuyez sur entrée pour continuer]", msg); getchar();
+
 
 #define MSG_SIZE 10
 

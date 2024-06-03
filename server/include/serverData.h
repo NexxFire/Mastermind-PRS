@@ -18,7 +18,7 @@
 
 #define SERVER_LISTENNING_KEY 58392
 
-#define LOG_LEVEL 1
+#define LOG_LEVEL 2
 /**
  * \def         LOG(level, fmt, ...)
  * \brief       Logs a message to the console with a specific level.
