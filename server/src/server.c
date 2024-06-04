@@ -109,9 +109,11 @@ void checkChoice(gameData_t *gameData, int playerIndex) {
         LOG(1, "Player %d nb right color : %d.\n", playerIndex, gameData->playerList.players[playerIndex].result[gameData->playerList.players[playerIndex].nbRound][1]);
     }
     gameData->playerList.players[playerIndex].result[gameData->playerList.players[playerIndex].nbRound][1] -= gameData->playerList.players[playerIndex].result[gameData->playerList.players[playerIndex].nbRound][0];
+    pthread_mutex_lock(&mutex);
     if (gameData->playerList.players[playerIndex].result[gameData->playerList.players[playerIndex].nbRound][0] == BOARD_WIDTH && gameData->gameWinner == EMPTY) {
         gameData->gameWinner = playerIndex;
     }
+    pthread_mutex_unlock(&mutex);
     LOG(1, "Player %d choice checked.\n", playerIndex);
     LOG(1, "Player %d result : %d good place and %d good color.\n", playerIndex, gameData->playerList.players[playerIndex].result[gameData->playerList.players[playerIndex].nbRound][0], gameData->playerList.players[playerIndex].result[gameData->playerList.players[playerIndex].nbRound][1]);
 }
@@ -147,7 +149,12 @@ void endGame(gameData_t *gameData) {
  */
 void *clientThreadHandler(void *args) {
     clientThreadHandlerArgs_t *clientThreadHandlerArgs = (clientThreadHandlerArgs_t *)args;
-    while (clientThreadHandlerArgs->gameData->playerList.players[clientThreadHandlerArgs->playerIndex].nbRound < MAX_ROUND && clientThreadHandlerArgs->gameData->gameWinner == EMPTY) {
+    while (clientThreadHandlerArgs->gameData->playerList.players[clientThreadHandlerArgs->playerIndex].nbRound < MAX_ROUND) {
+        pthread_mutex_lock(&mutex);
+        if (clientThreadHandlerArgs->gameData->gameWinner != EMPTY) {
+            break;
+        }
+        pthread_mutex_unlock(&mutex);
         getPlayerChoice(clientThreadHandlerArgs->gameData, clientThreadHandlerArgs->playerIndex);
         checkChoice(clientThreadHandlerArgs->gameData, clientThreadHandlerArgs->playerIndex);
         sendResult(clientThreadHandlerArgs->gameData, clientThreadHandlerArgs->playerIndex);

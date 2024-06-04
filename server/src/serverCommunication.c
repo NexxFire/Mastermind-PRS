@@ -5,7 +5,7 @@
  */
 #include "serverCommunication.h"
 
-extern pthread_mutex_t mutex;
+pthread_mutex_t mutexListenning = PTHREAD_MUTEX_INITIALIZER;
 
 
 /**
@@ -16,6 +16,7 @@ extern pthread_mutex_t mutex;
  */
 void clientRegistration(gameData_t *gameData) {
     LOG(1, "Waiting for players to connect...\n");
+    pthread_mutex_init(&mutexListenning, NULL);
     pthread_t threadListenning;
     pthread_t threadClients[MAX_PLAYERS];
     int gameStarted = 0;
@@ -38,11 +39,12 @@ void clientRegistration(gameData_t *gameData) {
         LOG(1, "Thread for player %d joined.\n", i);
         LOG(1, "nbPlayers: %d\n", gameData->playerList.nbPlayers);
     }
-    pthread_mutex_lock(&mutex);
+    pthread_mutex_lock(&mutexListenning);
     gameStarted = 1;
+    pthread_mutex_unlock(&mutexListenning);
     // Send a connection to exit the thread
     connectToServer(SERVER_LISTENNING_KEY);
-    pthread_mutex_unlock(&mutex);
+    
 
     pthread_join(threadListenning, NULL);
     LOG(1, "All players are ready.\n");
@@ -126,13 +128,14 @@ void *_listenningThreadHandler(void *args) {
     while (listenningThreadHandlerArgs->gameData->playerList.nbPlayers < MAX_PLAYERS && !*listenningThreadHandlerArgs->gameStarted) {
         LOG(1, "nbPlayers: %d\n", listenningThreadHandlerArgs->gameData->playerList.nbPlayers);
         LOG(1, "gameStarted: %d\n", *listenningThreadHandlerArgs->gameStarted);
-        //pthread_mutex_lock(&mutex);
+        
         listenningThreadHandlerArgs->gameData->playerList.players[listenningThreadHandlerArgs->gameData->playerList.nbPlayers].msgid = acceptClient(serverListenningQueue);
+        pthread_mutex_lock(&mutexListenning);
         if (*listenningThreadHandlerArgs->gameStarted) {
             LOG(1, "Stop listening\n");
             break;
         }
-        //pthread_mutex_unlock(&mutex);
+        pthread_mutex_unlock(&mutexListenning);
         clientReadyThreadHandlerArgs_t *clientReadyThreadHandlerArgs = malloc(sizeof(clientReadyThreadHandlerArgs_t));
         clientReadyThreadHandlerArgs->gameData = listenningThreadHandlerArgs->gameData;
         clientReadyThreadHandlerArgs->playerIndex = listenningThreadHandlerArgs->gameData->playerList.nbPlayers;
