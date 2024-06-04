@@ -183,13 +183,13 @@ void signalHandlerRegister () {
 void signalHandlerStop(int signum) {
     printf("Caught signal %d\n", signum);
     printf("Game stopped.\n");
+    for (int i = 0; clientPIDs[i] != 0 && clientPIDs[i] != getpid(); i++) {
+        kill(clientPIDs[i], SIGUSR1), "Error: failed to send signal to client.";
+    }
     exit(signum);
 }
 
 void cleanup() {
     printf("Cleaning up...\n");
     msgctl(msgget(SERVER_LISTENNING_KEY, 0666), IPC_RMID, NULL);
-    for (int i = 0; clientPIDs[i] != 0 && clientPIDs[i] != getpid(); i++) {
-        kill(clientPIDs[i], SIGUSR1), "Error: failed to send signal to client.";
-    }
 }
