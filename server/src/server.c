@@ -110,7 +110,8 @@ void checkChoice(gameData_t *gameData, int playerIndex) {
     }
     gameData->playerList.players[playerIndex].result[gameData->playerList.players[playerIndex].nbRound][1] -= gameData->playerList.players[playerIndex].result[gameData->playerList.players[playerIndex].nbRound][0];
     pthread_mutex_lock(&mutex);
-    if (gameData->playerList.players[playerIndex].result[gameData->playerList.players[playerIndex].nbRound][0] == BOARD_WIDTH && gameData->gameWinner == EMPTY) {
+    if (gameData->playerList.players[playerIndex].result[gameData->playerList.players[playerIndex].nbRound][0] == BOARD_WIDTH
+        && gameData->gameWinner == EMPTY) {
         gameData->gameWinner = playerIndex;
     }
     pthread_mutex_unlock(&mutex);
