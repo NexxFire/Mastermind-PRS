@@ -17,9 +17,10 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
  */
 int main() {
     gameData_t gameData;
-    pthread_mutex_init(&mutex, NULL);
+    
     signalHandlerRegister();
     while (1) {
+        pthread_mutex_init(&mutex, NULL);
         serverInit(&gameData);
         clientRegistration(&gameData);
         createCombinations(&gameData);
@@ -153,6 +154,7 @@ void *clientThreadHandler(void *args) {
     while (clientThreadHandlerArgs->gameData->playerList.players[clientThreadHandlerArgs->playerIndex].nbRound < MAX_ROUND) {
         pthread_mutex_lock(&mutex);
         if (clientThreadHandlerArgs->gameData->gameWinner != EMPTY) {
+            pthread_mutex_unlock(&mutex);
             break;
         }
         pthread_mutex_unlock(&mutex);
