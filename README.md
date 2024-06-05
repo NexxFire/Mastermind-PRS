@@ -13,18 +13,18 @@ The server and client executables will be created in the build directory
 ## How to play
 
 ### Server
-Run the server on a machine within your accessible networks
+Run the server on the machine
 ```bash
 ./build/server
 ```
-The server will start listening on port 58392 on every available network interface
+The server will start listening on the message queue with the key 58392 
 
 ### Client
-Run the client on a machine within the same network as the server
+Run the client on the machine
 ```bash
 ./build/client
 ```
-The client will ask for the server's IP address and the port number, enter the server's IP address and 58392 as the port number
+The client will automatically connect to the server
 
 You can now play the game with your friends
 
